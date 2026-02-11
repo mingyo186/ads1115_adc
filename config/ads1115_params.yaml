@@ -1,0 +1,24 @@
+ads1115_adc_node:
+  ros__parameters:
+    # ── Fake Mode ──────────────────────────────────────
+    fake_mode: true             # true: random data, false: real I2C
+
+    # ── I2C Settings ────────────────────────────────────
+    i2c_bus: 1                  # /dev/i2c-1
+    device_address: 0x48        # ADDR→GND=0x48, VDD=0x49, SDA=0x4A, SCL=0x4B
+
+    # ── Publish Rate ────────────────────────────────────
+    publish_rate: 10.0          # Hz
+
+    # ── Active Channels ─────────────────────────────────
+    #   List of single-ended channels to read (0-3)
+    active_channels: [0, 1, 2, 3]
+
+    # ── PGA Gain ────────────────────────────────────────
+    #   0=±6.144V  1=±4.096V  2=±2.048V(default)
+    #   3=±1.024V  4=±0.512V  5=±0.256V
+    pga_gain: 2
+
+    # ── Data Rate ───────────────────────────────────────
+    #   0=8SPS  1=16  2=32  3=64  4=128(default)  5=250  6=475  7=860
+    data_rate: 4
