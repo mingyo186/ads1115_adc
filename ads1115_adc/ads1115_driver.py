@@ -1,3 +1,8 @@
+# Copyright 2025 The ads1115_adc Authors
+#
+# Use of this source code is governed by an MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
 """ADS1115 I2C Driver - 16-bit 4-channel ADC."""
 
 import random
@@ -9,7 +14,7 @@ class FakeADS1115Driver:
     """Fake driver that generates random voltage data without I2C hardware."""
 
     def __init__(self, **kwargs):
-        pass
+        """Initialize fake driver (no-op)."""
 
     def read_channel(self, channel: int) -> float:
         """Return voltage in Volts for the given single-ended channel."""
@@ -17,21 +22,15 @@ class FakeADS1115Driver:
         return base.get(channel, 1.0) + random.gauss(0.0, 0.01)
 
     def close(self):
-        pass
+        """Close fake driver (no-op)."""
 
 
 class ADS1115Driver:
-    """Low-level I2C driver for Texas Instruments ADS1115.
-
-    Datasheet: ADS1115 (SBAS444C)
-    16-bit delta-sigma ADC with programmable gain amplifier and
-    internal oscillator. Supports 4 single-ended or 2 differential
-    input channels.
-    """
+    """Low-level I2C driver for Texas Instruments ADS1115."""
 
     # ── Register Map ──────────────────────────────────────────────
-    REG_CONVERSION = 0x00   # 16-bit conversion result
-    REG_CONFIG     = 0x01   # 16-bit configuration
+    REG_CONVERSION = 0x00  # 16-bit conversion result
+    REG_CONFIG = 0x01  # 16-bit configuration
 
     # ── MUX settings for single-ended channels (AINx vs GND) ────
     MUX_SINGLE = {
@@ -53,10 +52,10 @@ class ADS1115Driver:
 
     # ── Data rate config bits ────────────────────────────────────
     DR_TABLE = {
-        0: 0x0000,   #   8 SPS
-        1: 0x0020,   #  16 SPS
-        2: 0x0040,   #  32 SPS
-        3: 0x0060,   #  64 SPS
+        0: 0x0000,  # 8 SPS
+        1: 0x0020,  # 16 SPS
+        2: 0x0040,  # 32 SPS
+        3: 0x0060,  # 64 SPS
         4: 0x0080,   # 128 SPS (default)
         5: 0x00A0,   # 250 SPS
         6: 0x00C0,   # 475 SPS
@@ -65,6 +64,7 @@ class ADS1115Driver:
 
     def __init__(self, bus: int = 1, address: int = 0x48,
                  pga_gain: int = 2, data_rate: int = 4):
+        """Initialize ADS1115 driver over I2C."""
         from smbus2 import SMBus
 
         self.address = address
@@ -76,20 +76,13 @@ class ADS1115Driver:
 
     # ── Single-shot read ─────────────────────────────────────────
     def read_channel(self, channel: int) -> float:
-        """Perform single-shot conversion on the given channel.
-
-        Args:
-            channel: 0-3 for single-ended AIN0-AIN3 vs GND
-
-        Returns:
-            voltage in Volts
-        """
+        """Perform single-shot conversion and return voltage in Volts."""
         mux = self.MUX_SINGLE[channel]
 
         # Config: OS=1 (start), MUX, PGA, MODE=1 (single-shot),
         #         DR, COMP_QUE=11 (disable comparator)
-        config = 0x8000 | mux | self._pga_bits | 0x0100 | \
-                 self._dr_bits | 0x0003
+        config = (0x8000 | mux | self._pga_bits | 0x0100
+                  | self._dr_bits | 0x0003)
 
         # Write config to start conversion
         self.bus.write_i2c_block_data(
@@ -113,4 +106,5 @@ class ADS1115Driver:
         return value * self._fs_voltage / 32767.0
 
     def close(self):
+        """Close the I2C bus connection."""
         self.bus.close()

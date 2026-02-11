@@ -1,19 +1,26 @@
 #!/usr/bin/env python3
+# Copyright 2025 The ads1115_adc Authors
+#
+# Use of this source code is governed by an MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
 """ROS2 node that reads ADS1115 over I2C and publishes std_msgs/Float32 per channel."""
 
 import time
 
+from ads1115_adc.ads1115_driver import ADS1115Driver, FakeADS1115Driver
+from rcl_interfaces.msg import SetParametersResult
 import rclpy
 from rclpy.node import Node
-from rcl_interfaces.msg import SetParametersResult
 from std_msgs.msg import Float32
 from std_srvs.srv import Trigger
 
-from ads1115_adc.ads1115_driver import ADS1115Driver, FakeADS1115Driver
-
 
 class ADS1115AdcNode(Node):
+    """ROS2 node for ADS1115 16-bit ADC sensor."""
+
     def __init__(self):
+        """Initialize ADS1115 ADC node with parameters, driver, publishers, and services."""
         super().__init__('ads1115_adc_node')
 
         # ── Declare parameters ────────────────────────────────────
@@ -26,13 +33,13 @@ class ADS1115AdcNode(Node):
         self.declare_parameter('data_rate', 4)
 
         # ── Read parameters ───────────────────────────────────────
-        self.fake_mode    = self.get_parameter('fake_mode').value
-        self.bus_num      = self.get_parameter('i2c_bus').value
-        self.address      = self.get_parameter('device_address').value
-        rate              = self.get_parameter('publish_rate').value
-        self.channels     = list(self.get_parameter('active_channels').value)
-        self.pga_gain     = self.get_parameter('pga_gain').value
-        self.data_rate    = self.get_parameter('data_rate').value
+        self.fake_mode = self.get_parameter('fake_mode').value
+        self.bus_num = self.get_parameter('i2c_bus').value
+        self.address = self.get_parameter('device_address').value
+        rate = self.get_parameter('publish_rate').value
+        self.channels = list(self.get_parameter('active_channels').value)
+        self.pga_gain = self.get_parameter('pga_gain').value
+        self.data_rate = self.get_parameter('data_rate').value
 
         # ── Voltage offset bias per channel (set by calibration) ──
         self.channel_bias = {ch: 0.0 for ch in range(4)}
@@ -63,6 +70,7 @@ class ADS1115AdcNode(Node):
 
     # ── Driver init helper ───────────────────────────────────────
     def _init_driver(self):
+        """Initialize the ADS1115 driver based on fake_mode setting."""
         if self.fake_mode:
             self.driver = FakeADS1115Driver()
             self.get_logger().info(
@@ -81,6 +89,7 @@ class ADS1115AdcNode(Node):
 
     # ── Timer callback ───────────────────────────────────────────
     def _timer_cb(self):
+        """Read all active channels and publish voltage values."""
         for ch in self.channels:
             try:
                 voltage = self.driver.read_channel(ch)
@@ -98,6 +107,7 @@ class ADS1115AdcNode(Node):
 
     # ── Service: /adc/calibrate ──────────────────────────────────
     def _calibrate_cb(self, request, response):
+        """Handle calibrate service request by collecting samples and computing bias."""
         if self.fake_mode:
             response.success = True
             response.message = 'Calibration complete (fake)'
@@ -133,6 +143,7 @@ class ADS1115AdcNode(Node):
 
     # ── Service: /adc/reset ──────────────────────────────────────
     def _reset_cb(self, request, response):
+        """Handle reset service request by clearing bias and reinitializing driver."""
         self.channel_bias = {ch: 0.0 for ch in range(4)}
         self.driver.close()
         self._init_driver()
@@ -144,6 +155,7 @@ class ADS1115AdcNode(Node):
 
     # ── Runtime parameter change ─────────────────────────────────
     def _on_param_change(self, params):
+        """Handle runtime parameter changes for publish_rate."""
         for param in params:
             if param.name == 'publish_rate':
                 new_rate = param.value
@@ -158,6 +170,7 @@ class ADS1115AdcNode(Node):
 
 
 def main(args=None):
+    """Entry point for the ADS1115 ADC node."""
     rclpy.init(args=args)
     node = ADS1115AdcNode()
     try:
@@ -167,7 +180,10 @@ def main(args=None):
     finally:
         node.driver.close()
         node.destroy_node()
-        rclpy.shutdown()
+        try:
+            rclpy.shutdown()
+        except Exception:
+            pass
 
 
 if __name__ == '__main__':

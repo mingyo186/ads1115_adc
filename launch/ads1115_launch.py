@@ -1,3 +1,8 @@
+# Copyright 2025 The ads1115_adc Authors
+#
+# Use of this source code is governed by an MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
 """Launch file for ads1115_adc package."""
 
 import os
@@ -10,6 +15,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    """Generate launch description for ADS1115 ADC node."""
     pkg_dir = get_package_share_directory('ads1115_adc')
     default_params = os.path.join(pkg_dir, 'config', 'ads1115_params.yaml')
 
